@@ -6,6 +6,81 @@ Github Repository Link: https://github.com/0PEIN0/cfapi
 License: GNU General Public License version 2
 */
 
+function CodeforcesRootDirective( cfcObj , $sce ) {
+	return {
+        restrict : 'E' ,
+        replace : true ,
+		transclude : true ,
+        template : '\
+        	<div>\
+				<div class="overlay" data-ng-show="showLoadingFlag==true">\
+				    Loading...\
+				</div>\
+				<div data-ng-show="showLoadingFlag==false">\
+					<div>\
+						<ul class="nav nav-pills">\
+						  <li data-ng-repeat="item in navElementNameList track by $index" role="presentation" data-ng-click="navElementClicked(item.index)" data-ng-class="(currentNavIndex==item.index) ? \'active\' : \'\'"><a href="javascript:void(0);" data-ng-bind-html=\'item.title\'></a></li>\
+						  <li><a href="https://github.com/0PEIN0/cfapi/issues" target="_blank"><img alt="Report Bug" title="Report Bug" class="bug-image" src="images/bug.png"/></a></li>\
+						</ul>\
+					</div>\
+					<div>\
+						<codeforces-user-statistics-directive data-ng-show="navigationFlags[0] == true" show-loading-flag="showLoadingFlag" show-user-statistics-flag="navigationFlags[0]" page-header="navElementNameList[0].title" user-handle="userHandle"></codeforces-user-statistics-directive>\
+						<codeforces-recent-submissions-directive data-ng-show="navigationFlags[1] == true" show-loading-flag="showLoadingFlag" show-recent-submissions-flag="navigationFlags[1]" page-header="navElementNameList[1].title"></codeforces-recent-submissions-directive>\
+						<codeforces-contest-submissions-directive data-ng-show="navigationFlags[2] == true" show-loading-flag="showLoadingFlag" show-contest-submissions-flag="navigationFlags[2]" page-header="navElementNameList[2].title"></codeforces-contest-submissions-directive>\
+						<codeforces-contest-standing-directive data-ng-show="navigationFlags[3] == true" show-loading-flag="showLoadingFlag" show-standing-flag="navigationFlags[3]" page-header="navElementNameList[3].title"></codeforces-contest-standing-directive>\
+					</div>\
+				</div>\
+			</div>' ,
+        scope : {
+	    } ,
+        link: function( scope , element , attrs ) {
+			
+			scope.transformNavElementNameToPageName = function( navElementName ) {
+				var res ;
+				res = navElementName.toLowerCase() ;
+				while( res.search( ' ' ) != -1 ) {
+					res = res.replace( ' ' , '-' ) ;
+				}
+				return res ;
+			} ;
+		
+			scope.navElementClicked = function( idx ) {
+				var i , len , pageName ;
+				if( idx != null ) {
+					len = scope.navigationFlags.length ;
+					for( i = 0 ; i < len ; i++ ) {
+						scope.navigationFlags[ i ] = false ;
+					}
+					scope.showLoadingFlag = true ;
+					scope.currentNavIndex = idx ;
+					scope.navigationFlags[ idx ] = true ;
+					pageName = scope.transformNavElementNameToPageName( scope.navElementNameList[ idx ].name ) ;
+					ga( 'send' , 'pageview' , pageName ) ;
+				}
+			} ;
+		
+			scope.init = function() {
+				var i , len ;
+				scope.userHandle = cfcObj.defaultUserHandle ;
+				scope.navigationFlags = [] ;
+				scope.navElementNameList = [] ;
+				scope.navElementNameList.push( { name : 'Submissions of ' + scope.userHandle , title : $sce.trustAsHtml( 'Submissions of <strong>' + scope.userHandle + '</strong>' ) , index : 0 } ) ;
+				scope.navElementNameList.push( { name : 'Problemset Status' , title : $sce.trustAsHtml( 'Problemset Status' ) , index : 1 } ) ;
+				scope.navElementNameList.push( { name : 'Contest Submissions' , title : $sce.trustAsHtml( 'Contest Submissions' ) , index : 2 } ) ;
+				scope.navElementNameList.push( { name : 'Contest Standings' , title : $sce.trustAsHtml( 'Contest Standings' ) , index : 3 } ) ;
+				len = scope.navElementNameList.length ;
+				for( i = 0 ; i < len ; i++ ) {
+					scope.navigationFlags.push( false ) ;
+				}
+				scope.currentNavIndex = 1 ;
+				scope.navElementClicked( scope.currentNavIndex ) ;
+			} ;
+		
+			scope.init() ;
+        }
+    } ;
+}
+
 function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
 	return {
         restrict : 'E' ,
@@ -116,7 +191,7 @@ function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
     } ;
 }
 
-function CodeforcesContestStandingDirective( cfApi , cfcObj , cftsObj ) {
+function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj ) {
 	return {
 		restrict : 'E' ,
 		replace : true ,
@@ -127,11 +202,11 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cftsObj ) {
 				<div class="panel-body">\
 					<div class="well well-sm">\
 						<div>\
-							Filters: \
-							<select data-ng-change="contestSelected()" data-ng-model="selectedContest">\
+							<span class="filter-span">Filters:</span> \
+							<select class="form-control generic-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
 								<option data-ng-repeat="item in contestList.dataList" data-ng-bind="item.name" value="{{item.id}}" data-ng-init="contestListLoading($index)"></option>\
 							</select>\
-							<select data-ng-change="countrySelected()" data-ng-model="selectedCountry">\
+							<select class="form-control generic-select-tag" data-ng-change="countrySelected()" data-ng-model="selectedCountry">\
 								<option value="">Any Country</option>\
 								<option data-ng-repeat="item in countryList" data-ng-bind="item.countryName" value="{{item.countryName}}"></option>\
 							</select>\
@@ -205,7 +280,7 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cftsObj ) {
 			} ;
 
 			scope.$watch( 'showStandingFlag' , scope.showStandingFlagChanged , true ) ;
-			scope.countryList = cfcObj.defaultContestId ;
+			scope.countryList = cfsObj.getCountryList() ;
 			scope.userHandle = cfApi.getDefaultUserHandle() ;
 		}
 	} ;
@@ -234,20 +309,20 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 							Verdict distribution breakdown: <span class="label" data-ng-repeat="item in submissionList.summary.verdicts" data-ng-bind="item.name + \' : \' + item.frequency" data-ng-class="item.cssClass"></span>\
 						</div>\
 						<div>\
-							Filters: \
-							<select data-ng-change="filterSubmissionDataList()" data-ng-model="selectedTag">\
+							<span class="filter-span">Filters: </span>\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedTag">\
 								<option value="">Any Tag</option>\
 								<option data-ng-repeat="item in tagList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<select data-ng-change="filterSubmissionDataList()" data-ng-model="selectedLanguage">\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedLanguage">\
 								<option value="">Any Language</option>\
 								<option data-ng-repeat="item in languageList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<select data-ng-change="filterSubmissionDataList()" data-ng-model="selectedVerdict">\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedVerdict">\
 								<option value="">Any Verdict</option>\
 								<option data-ng-repeat="item in verdictList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<select data-ng-change="filterSubmissionDataList()" data-ng-model="selectedCountry">\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedCountry">\
 								<option value="">Any Country</option>\
 								<option data-ng-repeat="item in countryList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
@@ -393,7 +468,7 @@ function CodeforcesContestSubmissionsDirective( cfApi , cfcObj ) {
 			<div>\
 				<div class="well well-sm">\
 					Select Contest: \
-					<select data-ng-change="contestSelected()" data-ng-model="selectedContest">\
+					<select class="form-control generic-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
 						<option data-ng-repeat="item in contestList.dataList" data-ng-bind="item.name" value="{{item.id}}" data-ng-init="contestListLoading($index)"></option>\
 					</select>\
 				</div>\
