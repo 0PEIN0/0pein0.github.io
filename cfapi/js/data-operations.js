@@ -1,3 +1,4 @@
+/* global . */
 /*
 Author: S. M. Ijaz-ul-Amin Chowdhury
 Codeforces Handle: .PEIN.
@@ -151,7 +152,10 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 	
 	self = {} ;
 
-	self.transformVerdicts = function( textString ) {
+	self.transformVerdicts = function( textString , testSetType ) {
+		if( testSetType != null && testSetType.toLowerCase() == cfcObj.pretestSubmissionTestSetType.toLowerCase() && textString.toLowerCase() == cfcObj.acceptedSubmissionStatus.toLowerCase() ) {
+			textString = 'pretests-passed' ;
+		}
 		textString = shObj.replaceAssociatedStrings( cfsObj.verdictTextReplacements , textString ) ;
 		textString = shObj.makeTheFirstCharacterOfStringCapitalized( textString ) ;
 		return textString ;
@@ -237,67 +241,88 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		return res ;
 	} ;
 
-	self.generateHandleHtml = function( dataObject , propertyName , userInfoObj ) {
-		var i , sz , authorHandles , handle , countryImageHtml , countryList , memberList , userHandleCssClass , cssClassList , ratingDesignationList , rankString ;
-		if( dataObject[ propertyName ].members != null ) {
-			memberList = dataObject[ propertyName ].members ;
-		}
-		else {
-			memberList = dataObject[ propertyName ] ;
-		}
+	self.generateHandleHtml = function( dataObject , propertyName , userInfoList ) {
+		var i , sz1 , j , sz2 , k , sz3 , sz4 , userInfoObj , res , handleList , handle , countryImageHtml , countryList , userHandleCssClass , cssClassList , ratingDesignationList , rankString ;
+		res = '' ;
+		handleList = dataObject[ propertyName ] ;
 		ratingDesignationList = cfsObj.ratingDesignations ;
 		cssClassList = cfsObj.ratingCssClasses ;
-		sz = ratingDesignationList.length ;
-		userHandleCssClass = '' ;
-		if( userInfoObj != null ) {
-			if( userInfoObj.rank == null || userInfoObj.rank == '' ) {
-				rankString = 'unrated' ;
-			}
-			else {
-				rankString = userInfoObj.rank.toLowerCase() ;
-			}
-			for( i = 0 ; i < sz ; i++ ) {
-				if( ratingDesignationList[ i ] != null && ratingDesignationList[ i ].toLowerCase() == rankString ) {
-					userHandleCssClass = cssClassList[ i ] ;
-					break ;
+		sz1 = handleList.length ;
+		sz2 = 0 ;
+		if( userInfoList != null ) {
+			sz2 = userInfoList.length ;
+		}
+		sz3 = ratingDesignationList.length ;
+		sz4 = countryList = cfsObj.getCountryListAsObject() ;
+		for( i = 0 ; i < sz1 ; i++ ) {
+			handle = handleList[ i ] ;
+			countryImageHtml = '' ;
+			userHandleCssClass = '' ;
+			if( userInfoList != null && userInfoList.length > 0 ) {
+				userInfoObj = null ;
+				for( j = 0 ; j < sz2 ; j++ ) {
+					if( handleList[ i ].toLowerCase().localeCompare( userInfoList[ j ].handle.toLowerCase() ) == 0 ) {
+						userInfoObj = userInfoList[ j ] ;
+						break ;
+					}
+				}
+				if( userInfoObj != null ) {
+					if( userInfoObj.rank == null || userInfoObj.rank == '' ) {
+						rankString = 'unrated' ;
+					}
+					else {
+						rankString = userInfoObj.rank.toLowerCase() ;
+					}
+					for( k = 0 ; k < sz3 ; k++ ) {
+						if( ratingDesignationList[ k ] != null && ratingDesignationList[ k ].toLowerCase() == rankString ) {
+							userHandleCssClass = cssClassList[ k ] ;
+							break ;
+						}
+					}
+					if( userInfoObj.country != null && userInfoObj.country != '' ) {
+						while( userInfoObj.country.search( ' ' ) != -1 ) {
+							userInfoObj.country = userInfoObj.country.replace( ' ' , '' ) ;
+						}
+					}
+					else {
+						userInfoObj.country = '' ;
+					}
+					if( userInfoObj.country != null && userInfoObj.country != '' && countryList[ userInfoObj.country ] != null ) {
+						countryImageHtml = '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/ratings/country/' + userInfoObj.country + '">' + '<img title="' + userInfoObj.country + '" alt="' + userInfoObj.country + '" class="flag-img" src="' + countryList[ userInfoObj.country ] + '"></a>' ;
+					}
 				}
 			}
+			res += countryImageHtml + '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/profile/' + handle + '">' + '<div class="user-rating-core ' + userHandleCssClass + '">' + handle + '</div>' + '</a>' ;
 		}
-		sz = memberList.length ;
-		authorHandles = '' ;
-		countryList = cfsObj.getCountryListAsObject() ;
-		if( userInfoObj != null && userInfoObj.country != null && userInfoObj.country != '' ) {
-			while( userInfoObj.country.search( ' ' ) != -1 ) {
-				userInfoObj.country = userInfoObj.country.replace( ' ' , '' ) ;
+		if( dataObject.teamName != null && dataObject.teamName != '' ) {
+			if( dataObject.teamId != null && dataObject.teamId != '' ) {
+				res += '(<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/team/' + dataObject.teamId + '">' + dataObject.teamName + '</a>)' ;
+			}
+			else {
+				res += '(' + dataObject.teamName + ')' ;
 			}
 		}
-		for( i = 0 ; i < sz ; i++ ) {
-			handle = memberList[ i ].handle ;
-			countryImageHtml = '' ;
-			if( userInfoObj != null && userInfoObj.country != null && userInfoObj.country != '' && countryList[ userInfoObj.country ] != null ) {
-				countryImageHtml = '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/ratings/country/' + userInfoObj.country + '">' + '<img title="' + userInfoObj.country + '" alt="' + userInfoObj.country + '" class="flag-img" src="' + countryList[ userInfoObj.country ] + '"></a>' ;
-			}
-			authorHandles += countryImageHtml + '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/profile/' + handle + '">' + '<div class="user-rating-core ' + userHandleCssClass + '">' + handle + '</div>' + '</a>' ;
-		}
-		if( dataObject[ propertyName ].teamName != null && dataObject[ propertyName ].teamName != '' ) {
-			authorHandles += ' (<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/team/' + dataObject[ propertyName ].teamId + '">' + dataObject[ propertyName ].teamName + '</a>)' ;
-		}
-		return authorHandles ;
+		return res ;
 	} ;
 	
-	self.generateProblemHtml = function( dataObject ) {
+	self.generateProblemHtml = function( dataObject , testSetType ) {
 		var problemHtml ;
 		problemHtml = '' ;
 		if( dataObject.contestId >= cfcObj.gymMinimumContestId ) {		
 			problemHtml += '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/gym/' + dataObject.contestId + '/problem/' + dataObject.index + '"><div>' + dataObject.name + '</div></a>' ;
 		}
 		else {
-			problemHtml += '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/problemset/problem/' + dataObject.contestId + '/' + dataObject.index + '"><div>' + dataObject.name + '</div></a>' ;		
+			if( testSetType != null && testSetType.toLowerCase() == cfcObj.pretestSubmissionTestSetType.toLowerCase() ) {
+				problemHtml += '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/contest/' + dataObject.contestId + '/problem/' + dataObject.index + '"><div>' + dataObject.name + '</div></a>' ;				
+			}
+			else {
+				problemHtml += '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/problemset/problem/' + dataObject.contestId + '/' + dataObject.index + '"><div>' + dataObject.name + '</div></a>' ;
+			}		
 		}
 		if( dataObject.contestId != null && dataObject.index != null ) {
 			problemHtml += '<span class="problem-info">(' + dataObject.contestId + '-' + dataObject.index + ')</span>' ;
 		}
-		if( dataObject.points != null ) {
+		if( dataObject.points != null && dataObject.points != -1 ) {
 			problemHtml += '<span class="problem-info">POINTS: ' + dataObject.points + '</span>' ;
 		}
 		return problemHtml ;
@@ -344,14 +369,25 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		}
 		return res ;
 	} ;
+	
+	self.buildRoomHtml = function( dataObject ) {
+		var res ;
+		res = '<a target="_blank" href="' + cfcObj.codeforcesBaseUrl + '/contest/' + dataObject.contestId + '/room/' + dataObject.party.room + '">' + dataObject.party.room + '</a>' ;
+		return res ;
+	} ;
 
-	self.buildUserStandingObject = function( dataObject , summary ) {
-		var userStanding , i , sz ;
+	self.buildUserStandingObject = function( dataObject , summary , contestId ) {
+		var userStanding , i , sz , cssClass ;
+		dataObject.contestId = contestId ;
 		userStanding = {} ;
 		userStanding.rank = dataObject.rank ;
 		userStanding.rankHtml = '' + dataObject.rank ;
+		userStanding.room = dataObject.party.room ;
+		userStanding.roomHtml = self.buildRoomHtml( dataObject ) ;
 		userStanding.handle = dataObject.authorHandles ;
-		userStanding.handleHtml = self.generateHandleHtml( dataObject , 'party' , null ) ;
+		userStanding.handleHtml = self.generateHandleHtml( dataObject , 'authorHandles' , null ) ;
+		userStanding.teamName = dataObject.teamName ;
+		userStanding.teamId = dataObject.teamId ;
 		userStanding.points = dataObject.points ;
 		userStanding.pointsHtml = '<div class="standings-cell-points">' + dataObject.points + '</div>' ;
 		userStanding.penalty = dataObject.penalty ;
@@ -381,7 +417,13 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 				}
 			}
 			else {
-				userStanding[ String.fromCharCode( 'a'.charCodeAt( 0 ) + i ) + 'Html' ] = '<div class="standings-cell-core standings-cell-accepted">' + dataObject.problemResults[ i ].points + '</div>' ;
+				if( dataObject.problemResults[ i ].type.toLowerCase() == cfcObj.standingResultType.toLowerCase() ) {
+					cssClass = 'standings-cell-pretests-passed' ;
+				}
+				else {
+					cssClass = 'standings-cell-accepted' ;
+				}
+				userStanding[ String.fromCharCode( 'a'.charCodeAt( 0 ) + i ) + 'Html' ] = '<div class="standings-cell-core ' + cssClass + '">' + dataObject.problemResults[ i ].points + '</div>' ;
 			}
 		}
 		return userStanding ;
@@ -395,9 +437,11 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		submission.dateTime = dataObject.creationDateTimeString ;
 		submission.dateTimeHtml = dataObject.creationDateTimeString ;
 		submission.handle = dataObject.authorHandles ;
-		submission.handleHtml = self.generateHandleHtml( dataObject , 'author' , null ) ;
+		submission.handleHtml = self.generateHandleHtml( dataObject , 'authorHandles' , null ) ;
+		submission.teamName = dataObject.teamName ;
+		submission.teamId = dataObject.teamId ;
 		submission.problemName = dataObject.problem.name ;
-		submission.problemNameHtml = self.generateProblemHtml( dataObject.problem ) ;
+		submission.problemNameHtml = self.generateProblemHtml( dataObject.problem , dataObject.testset ) ;
 		submission.problemTags = dataObject.problem.tags.join( ', ' ) ;
 		submission.problemTagsHtml = self.generateProblemTagsHtml( submission ) ;
 		submission.problemIdentification = '' + dataObject.problem.contestId + '-' + dataObject.problem.index ;
@@ -411,6 +455,9 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		submission.executionTimeHtml = '' + dataObject.timeConsumedSeconds ;
 		submission.executionMemory = dataObject.memoryConsumedMegaBytes ;
 		submission.executionMemoryHtml = '' + dataObject.memoryConsumedMegaBytes + ' MB' ;
+		submission.index = dataObject.problemIndex ;
+		submission.points = dataObject.problemPoints ;
+		submission.contestId = dataObject.problem.contestId ;
 		return submission ;
 	} ;
 	
@@ -449,8 +496,26 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		problem.problemTypeHtml = '' + problem.problemType ;
 		return problem ;
 	} ;
+	
+	self.getHandlesInAnArray = function( handleList ) {
+		var i , sz , res ;
+		res = [] ;
+		sz = handleList.length ;
+		for( i = 0 ; i < sz ; i++ ) {
+			if( handleList[ i ].handle != null ) {
+				res.push( handleList[ i ].handle ) ;
+			}
+			else if( handleList[ i ].member != null ) {
+				res.push( handleList[ i ].member ) ;
+			}
+			else {
+				res.push( handleList[ i ] ) ;
+			}
+		}
+		return res ;
+	} ;
 
-	self.getAuthorList = function( dataList ) {
+	self.getUniqueAuthorList = function( dataList ) {
 		var authorList , i , sz1 , j , sz2 , userMap , mapCnt ;
 		authorList = [] ;
 		userMap = [] ;
@@ -459,9 +524,9 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		for( i = 0 ; i < sz1 ; i++ ) {
 			sz2 = dataList[ i ].authorHandles.length ;
 			for( j = 0 ; j < sz2 ; j++ ) {
-				if( userMap[ dataList[ i ].authorHandles[ j ].handle ] == null ) {
-					userMap[ dataList[ i ].authorHandles[ j ].handle ] = mapCnt++ ;
-					authorList.push( dataList[ i ].authorHandles[ j ].handle ) ;
+				if( userMap[ dataList[ i ].authorHandles[ j ] ] == null ) {
+					userMap[ dataList[ i ].authorHandles[ j ] ] = mapCnt++ ;
+					authorList.push( dataList[ i ].authorHandles[ j ] ) ;
 				}
 			}
 		}
@@ -488,6 +553,9 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 					if( fl == 0 ) {
 						if( dataList[ i ][ dataListPropertyName ][ k ] != -1 && dataList[ i ][ dataListPropertyName ][ k ] != '' && dataList[ i ][ dataListPropertyName ][ k ] != null ) {
 							res.summary[ summaryPropertyName ].push( { name : dataList[ i ][ dataListPropertyName ][ k ] , frequency : 1 } ) ;
+							if( dataList[ i ].verdictTextCssClass != null && dataListPropertyName == 'verdict' ) {
+								res.summary[ summaryPropertyName ][ res.summary[ summaryPropertyName ].length - 1 ].cssClass = dataList[ i ].verdictTextCssClass ;
+							}
 						}
 					}
 				}
@@ -505,6 +573,9 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 				if( fl == 0 ) {
 					if( dataList[ i ][ dataListPropertyName ] != -1 && dataList[ i ][ dataListPropertyName ] != '' && dataList[ i ][ dataListPropertyName ] != null ) {
 						res.summary[ summaryPropertyName ].push( { name : dataList[ i ][ dataListPropertyName ] , frequency : 1 } ) ;
+						if( dataList[ i ].verdictTextCssClass != null && dataListPropertyName == 'verdict' ) {
+							res.summary[ summaryPropertyName ][ res.summary[ summaryPropertyName ].length - 1 ].cssClass = dataList[ i ].verdictTextCssClass ;
+						}
 					}
 				}
 			}
@@ -529,6 +600,37 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		} ) ;
 		
 		return res ;
+	} ;
+	
+	self.extractCountryListAgainstHandleListUsingUserInfoList = function( dataList , userInfoList ) {
+		var i , sz1 , j , sz2 , k , sz3 , l , sz4 , fl ;
+		sz1 = dataList.length ;
+		sz2 = userInfoList.length ;
+		for( i = 0 ; i < sz1 ; i++ ) {
+			dataList[ i ].countries = [] ;
+			if( dataList[ i ].handle != null ) {
+				sz3 = dataList[ i ].handle.length ;
+				for( k = 0 ; k < sz3 ; k++ ) {
+					for( j = 0 ; j < sz2 ; j++ ) {
+						if( dataList[ i ].handle[ k ] == userInfoList[ j ].handle ) {
+							sz4 = dataList[ i ].countries.length ;
+							fl = 0 ;
+							for( l = 0 ; l < sz4 ; l++ ) {
+								if( dataList[ i ].countries[ l ] == userInfoList[ j ].country ) {
+									fl = 1 ;
+									break ;
+								}
+							}
+							if( fl == 0 ) {
+								dataList[ i ].countries.push( userInfoList[ j ].country ) ;
+							}
+							break ;
+						}
+					}
+				}
+			}
+		}
+		return dataList ;
 	} ;
 
 	this.parseDefaultNoParsing = function( data ) {
@@ -572,8 +674,10 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		data = data.rows ;
 		sz1 = data.length ;
 		for( i = 0 ; i < sz1 ; i++ ) {
-			data[ i ].authorHandles = data[ i ].party.members ;
-			userStanding = self.buildUserStandingObject( data[ i ] , res.summary ) ;
+			data[ i ].authorHandles = self.getHandlesInAnArray( data[ i ].party.members ) ;
+			data[ i ].teamName = data[ i ].party.teamName ;
+			data[ i ].teamId = data[ i ].party.teamId ;  
+			userStanding = self.buildUserStandingObject( data[ i ] , res.summary , res.summary.contest.id ) ;
 			if( userStanding.penalty > 0 ) {
 				res.summary.hasPenalty = true ;
 			}
@@ -583,8 +687,36 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 			res.dataList.push( userStanding ) ;
 		}
 		res.filteredDataList = res.dataList ;
-		res.summary.users = self.getAuthorList( data ) ;
+		res.summary.users = self.getUniqueAuthorList( data ) ;
 		res.summary.numberOfProblems = res.summary.problems.length ;
+		return res ;
+	} ;
+	
+	this.parseContestStandingsWithUserInfo = function( standingListObj , userInfoList ) {
+		var i , sz1 , standingList ;
+		standingList = standingListObj.dataList ;
+		sz1 = standingList.length ;
+		for( i = 0 ; i < sz1 ; i++ ) {
+			standingList[ i ].handleHtml = self.generateHandleHtml( standingList[ i ] , 'handle' , userInfoList ) ;
+		}
+		standingList = self.extractCountryListAgainstHandleListUsingUserInfoList( standingList , userInfoList ) ;
+		standingListObj.dataList = standingList ;
+		standingListObj = self.calculateSummaryOfAProperty( standingListObj , userInfoList , 'countries' , 'country' ) ;
+		return standingListObj ;
+	} ;
+	
+	this.parseContestStandingsByCountry = function( standingList , countryName ) {
+		var i , sz1 , res , rank ;
+		res = [] ;
+		sz1 = standingList.length ;
+		rank = 1 ;
+		for( i = 0 ; i < sz1 ; i++ ) {
+			if( standingList[ i ].countries != null && standingList[ i ].countries.length > 0 && standingList[ i ].countries.join( ',' ).toLowerCase().indexOf( countryName.toLowerCase() ) != -1 ) {
+				standingList[ i ].relativeRank = rank++ ;
+				standingList[ i ].relativeRankHtml = '' + standingList[ i ].relativeRank ;
+				res.push( standingList[ i ] ) ;
+			}
+		}
 		return res ;
 	} ;
 	
@@ -633,10 +765,10 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		sz = problemSetList.length ;
 		for( i = 0 ; i < sz ; i++ ) {
 			fl = 1 ;
-			if( fl == 1 && tagName != null && tagName != '' && problemSetList[ i ].problemTags.toLowerCase().search( tagName.toLowerCase() ) == -1 ) {
+			if( fl == 1 && tagName != null && tagName != '' && problemSetList[ i ].problemTags.toLowerCase().indexOf( tagName.toLowerCase() ) == -1 ) {
 				fl = 0 ;
 			}
-			if( fl == 1 && problemIndex != null && problemIndex != '' && problemSetList[ i ].index.toLowerCase().search( problemIndex.toLowerCase() ) == -1 ) {
+			if( fl == 1 && problemIndex != null && problemIndex != '' && problemSetList[ i ].index.toLowerCase().indexOf( problemIndex.toLowerCase() ) == -1 ) {
 				fl = 0 ;
 			}
 			if( fl == 1 && problemPoint != null && problemPoint != '' && problemSetList[ i ].points != problemPoint ) {
@@ -644,42 +776,6 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 			}
 			if( fl == 1 ) {
 				res.push( problemSetList[ i ] ) ;
-			}
-		}
-		return res ;
-	} ;
-	
-	this.parseContestStandingsWithUserInfo = function( standingList , userInfoList ) {
-		var i , sz1 , j , sz2 ;
-		sz1 = standingList.length ;
-		sz2 = userInfoList.length ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			for( j = 0 ; j < sz2 ; j++ ) {
-				if( standingList[ i ].handle[ 0 ].handle == userInfoList[ j ].handle )  {
-					standingList[ i ].handleHtml = self.generateHandleHtml( standingList[ i ] , 'handle' , userInfoList[ j ] ) ;
-					break ;
-				}
-			}
-		}
-		return standingList ;
-	} ;
-	
-	this.parseContestStandingsByCountry = function( standingList , userInfoList , countryName ) {
-		var i , sz1 , res , j , sz2 , rank ;
-		res = [] ;
-		sz1 = standingList.length ;
-		sz2 = userInfoList.length ;
-		rank = 1 ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			for( j = 0 ; j < sz2 ; j++ ) {
-				if( standingList[ i ].handle != null && standingList[ i ].handle[ 0 ] != null && standingList[ i ].handle[ 0 ].handle != null && userInfoList[ j ].handle != null ) {
-					if( standingList[ i ].handle[ 0 ].handle == userInfoList[ j ].handle && userInfoList[ j ].country == countryName ) {
-						standingList[ i ].relativeRank = rank++ ;
-						standingList[ i ].relativeRankHtml = '' + standingList[ i ].relativeRank ;
-						res.push( standingList[ i ] ) ;
-						break ;
-					}
-				}
 			}
 		}
 		return res ;
@@ -699,7 +795,7 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 	} ;
 
 	this.parseSubmissions = function( data ) {
-		var i , sz1 , res , j , sz2 , fl , submission , k , sz3 ;
+		var i , sz1 , res , submission ;
 		res = {} ;
 		res.dataList = [] ;
 		res.summary = {} ;
@@ -708,23 +804,26 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		res.summary.totalAccepted = 0 ;
 		res.summary.totalInContest = 0 ;
 		res.summary.totalInContestAccepted = 0 ;
-		res.summary.languages = [] ;
-		res.summary.verdicts = [] ;
-		res.summary.tags = [] ;
-		res.summary.countries = [] ;
 		for( i = 0 ; i < sz1 ; i++ ) {
 			data[ i ].creationDateTimeString = self.makeDateTimeStringFromMilliseconds( data[ i ].creationTimeSeconds ) ;
 			data[ i ].problemName = data[ i ].problem.name ;
-			data[ i ].authorHandles = data[ i ].author.members ;
+			data[ i ].problemIndex = data[ i ].problem.index ;
+			data[ i ].problemPoints = data[ i ].problem.points ;
+			if( data[ i ].problemPoints == null ) {
+				data[ i ].problemPoints = -1 ;
+			}
+			data[ i ].authorHandles = self.getHandlesInAnArray( data[ i ].author.members ) ;
+			data[ i ].teamName = data[ i ].author.teamName ;
+			data[ i ].teamId = data[ i ].author.teamId ;
 			data[ i ].timeConsumedSeconds = shObj.roundToDecimalPlaces( ( data[ i ].timeConsumedMillis / 1000 ) , 3 ) ;
 			data[ i ].memoryConsumedMegaBytes = shObj.roundToDecimalPlaces( ( data[ i ].memoryConsumedBytes / ( 1024 * 1024 ) ) , 2 ) ;
-			data[ i ].verdict = self.transformVerdicts( data[ i ].verdict ) ;
+			data[ i ].verdict = self.transformVerdicts( data[ i ].verdict , data[ i ].testset ) ;
 			data[ i ].verdictText = self.formatVerdictTextsToShow( data[ i ] ) ;
 			data[ i ].inContestSubmission = ( data[ i ].author.participantType == 'CONTESTANT' ) ? true : false ;
 			data[ i ].verdictTextCssClass = self.buildCssClassFromVerdict( data[ i ].verdict ) ;
+			data[ i ].tags = data[ i ].problem.tags ;
 			submission = self.buildSubmissionObject( data[ i ] ) ;
 			res.dataList.push( submission ) ;
-			//summary build up calculations
 			if( data[ i ].inContestSubmission == true ) {
 				res.summary.totalInContest++ ;
 			}
@@ -734,115 +833,42 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 					res.summary.totalInContestAccepted++ ;
 				}
 			}
-			sz2 = res.summary.languages.length ;
-			fl = 0 ;
-			for( j = 0 ; j < sz2 ; j++ ) {
-				if( res.summary.languages[ j ].name == data[ i ].programmingLanguage ) {
-					fl = 1 ;
-					res.summary.languages[ j ].frequency++ ;
-					break ;
-				}
-			}
-			if( fl == 0 ) {
-				res.summary.languages.push( { name : data[ i ].programmingLanguage , frequency : 1 } ) ;
-			}
-			sz2 = res.summary.verdicts.length ;
-			fl = 0 ;
-			for( j = 0 ; j < sz2 ; j++ ) {
-				if( res.summary.verdicts[ j ].name == data[ i ].verdict ) {
-					fl = 1 ;
-					res.summary.verdicts[ j ].frequency++ ;
-					break ;
-				}
-			}
-			if( fl == 0 ) {
-				res.summary.verdicts.push( { name : data[ i ].verdict , frequency : 1 , cssClass : data[ i ].verdictTextCssClass } ) ;
-			}
-			sz3 = data[ i ].problem.tags.length ;
-			for( k = 0 ; k < sz3 ; k++ ) {
-				fl = 0 ;
-				sz2 = res.summary.tags.length ;
-				for( j = 0 ; j < sz2 ; j++ ) {
-					if( res.summary.tags[ j ].name == data[ i ].problem.tags[ k ] ) {
-						fl = 1 ;
-						res.summary.tags[ j ].frequency++ ;
-						break ;
-					}
-				}
-				if( fl == 0 ) {
-					res.summary.tags.push( { name : data[ i ].problem.tags[ k ] , frequency : 1 } ) ;
-				}
-			}
 		}
-		//summary sortings
-		res.summary.languages = res.summary.languages.sort( function( left , right ) {
-			return right.frequency - left.frequency ;
-		} ) ;
-		res.summary.verdicts = res.summary.verdicts.sort( function( left , right ) {
-			return right.frequency - left.frequency ;
-		} ) ;
-		res.summary.tags = res.summary.tags.sort( function( left , right ) {
-			return right.frequency - left.frequency ;
-		} ) ;
-		res.summary.countries = res.summary.countries.sort( function( left , right ) {
-			return right.frequency - left.frequency ;
-		} ) ;
-		res.summary.languagesAlphabeticallySorted = [] ;
-		sz1 = res.summary.languages.length ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			res.summary.languagesAlphabeticallySorted.push( res.summary.languages[ i ] ) ;
-		}
-		res.summary.languagesAlphabeticallySorted = res.summary.languagesAlphabeticallySorted.sort( function( left , right ) {
-			if( left == null || left.name == null || right == null || right.name == null ) {
-				return 0 ;
-			}
-			return left.name.localeCompare( right.name ) ;
-		} ) ;
-		res.summary.verdictsAlphabeticallySorted = [] ;
-		sz1 = res.summary.verdicts.length ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			res.summary.verdictsAlphabeticallySorted.push( res.summary.verdicts[ i ] ) ;
-		}
-		res.summary.verdictsAlphabeticallySorted = res.summary.verdictsAlphabeticallySorted.sort( function( left , right ) {
-			if( left == null || left.name == null || right == null || right.name == null ) {
-				return 0 ;
-			}
-			return left.name.localeCompare( right.name ) ;
-		} ) ;
-		res.summary.tagsAlphabeticallySorted = [] ;
-		sz1 = res.summary.tags.length ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			res.summary.tagsAlphabeticallySorted.push( res.summary.tags[ i ] ) ;
-		}
-		res.summary.tagsAlphabeticallySorted = res.summary.tagsAlphabeticallySorted.sort( function( left , right ) {
-			if( left == null || left.name == null || right == null || right.name == null ) {
-				return 0 ;
-			}
-			return left.name.localeCompare( right.name ) ;
-		} ) ;
-		res.summary.users = self.getAuthorList( data ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'languages' , 'programmingLanguage' ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'verdicts' , 'verdict' ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'countries' , 'countries' ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'tags' , 'tags' ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'problemIndexes' , 'problemIndex' ) ;
+		res = self.calculateSummaryOfAProperty( res , data , 'points' , 'problemPoints' ) ;
+		res.summary.users = self.getUniqueAuthorList( data ) ;
 		return res ;
 	} ;
 	
-	this.parseSubmissionListThroughFilter = function( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryName ) {
+	this.parseSubmissionListThroughFilter = function( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryName , problemIndex , problemPoint ) {
 		var res , i , sz , fl ;
 		res = [] ;
 		sz = submissionList.length ;
 		for( i = 0 ; i < sz ; i++ ) {
 			fl = 1 ;
-			if( fl == 1 && verdictName != null && verdictName != '' && submissionList[ i ].verdict.toLowerCase().search( verdictName.toLowerCase() ) == -1 ) {
+			if( fl == 1 && verdictName != null && verdictName != '' && submissionList[ i ].verdict.toLowerCase().indexOf( verdictName.toLowerCase() ) == -1 ) {
 				fl = 0 ;
 			}
 			if( fl == 1 && showUnofficialSubmissions != null && showUnofficialSubmissions == false && submissionList[ i ].inContestSubmission == false ) {
 				fl = 0 ;
 			}
-			if( fl == 1 && tagName != null && tagName != '' && submissionList[ i ].problemTags.toLowerCase().search( tagName.toLowerCase() ) == -1 ) {
+			if( fl == 1 && tagName != null && tagName != '' && submissionList[ i ].problemTags.toLowerCase().indexOf( tagName.toLowerCase() ) == -1 ) {
 				fl = 0 ;
 			}
-			if( fl == 1 && languageName != null && languageName != '' && submissionList[ i ].lang.toLowerCase().search( languageName.toLowerCase() ) == -1 ) {
+			if( fl == 1 && languageName != null && languageName != '' && submissionList[ i ].lang.toLowerCase().indexOf( languageName.toLowerCase() ) == -1 ) {
 				fl = 0 ;
 			}
-			if( fl == 1 && countryName != null && countryName != '' && ( submissionList[ i ].country == null || submissionList[ i ].country == '' || submissionList[ i ].country.toLowerCase() != countryName.toLowerCase() ) ) {
+			if( fl == 1 && countryName != null && countryName != '' && ( submissionList[ i ].countries == null || submissionList[ i ].countries == '' || submissionList[ i ].countries.length == 0 || submissionList[ i ].countries.join( ',' ).toLowerCase().indexOf( countryName.toLowerCase() ) == -1 ) ) {
+				fl = 0 ;
+			}
+			if( fl == 1 && problemIndex != null && problemIndex != '' && submissionList[ i ].index.toLowerCase().indexOf( problemIndex.toLowerCase() ) == -1 ) {
+				fl = 0 ;
+			}
+			if( fl == 1 && problemPoint != null && problemPoint != '' && submissionList[ i ].points != problemPoint ) {
 				fl = 0 ;
 			}
 			if( fl == 1 ) {
@@ -853,44 +879,15 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 	} ;
 	
 	this.parseSubmissionsWithUserInfo = function( submissionListObj , userInfoList ) {
-		var i , sz1 , j , sz2 , submissionList , fl , sz3 , k ;
+		var i , sz1 , submissionList ;
 		submissionList = submissionListObj.dataList ;
 		sz1 = submissionList.length ;
-		sz2 = userInfoList.length ;
 		for( i = 0 ; i < sz1 ; i++ ) {
-			for( j = 0 ; j < sz2 ; j++ ) {
-				if( submissionList[ i ].handle[ 0 ].handle == userInfoList[ j ].handle )  {
-					submissionList[ i ].handleHtml = self.generateHandleHtml( submissionList[ i ] , 'handle' , userInfoList[ j ] ) ;
-					if( userInfoList[ j ].country != null && userInfoList[ j ].country != '' ) {
-						submissionList[ i ].country = userInfoList[ j ].country ;
-						sz3 = submissionListObj.summary.countries.length ;
-						fl = 0 ;
-						for( k = 0 ; k < sz3 ; k++ ) {
-							if( submissionListObj.summary.countries[ k ].name == userInfoList[ j ].country ) {
-								fl = 1 ;
-								submissionListObj.summary.countries[ k ].frequency++ ;
-								break ;
-							}
-						}
-						if( fl == 0 ) {
-							submissionListObj.summary.countries.push( { name : userInfoList[ j ].country , frequency : 1 } ) ;
-						}
-					}
-					break ;
-				}
-			}
+			submissionList[ i ].handleHtml = self.generateHandleHtml( submissionList[ i ] , 'handle' , userInfoList ) ;
 		}
-		submissionListObj.summary.countriesAlphabeticallySorted = [] ;
-		sz1 = submissionListObj.summary.countries.length ;
-		for( i = 0 ; i < sz1 ; i++ ) {
-			submissionListObj.summary.countriesAlphabeticallySorted.push( submissionListObj.summary.countries[ i ] ) ;
-		}
-		submissionListObj.summary.countriesAlphabeticallySorted = submissionListObj.summary.countriesAlphabeticallySorted.sort( function( left , right ) {
-			if( left == null || right == null ) {
-				return 0 ;
-			}
-			return left.name.localeCompare( right.name ) ;
-		} ) ;
+		submissionList = self.extractCountryListAgainstHandleListUsingUserInfoList( submissionList , userInfoList ) ;
+		submissionListObj.dataList = submissionList ;
+		submissionListObj = self.calculateSummaryOfAProperty( submissionListObj , userInfoList , 'countries' , 'country' ) ;
 		return submissionListObj ;
 	} ;
 	
@@ -901,7 +898,7 @@ function CodeforcesDataListParser( cfsObj , cfcObj , shObj ) {
 		for( i = 0 ; i < sz1 ; i++ ) {
 			for( j = 0 ; j < sz2 ; j++ ) {
 				problemIdentification = '' + problemSetList[ j ].contestId + '-' + problemSetList[ j ].index ;
-				if( submissionList[ i ].problemIdentification == problemIdentification || ( submissionList[ i ].problemName == problemSetList[ j ].name && parseInt( submissionList[ i ].problemIdentification.split( '-' )[ 0 ] ) < cfcObj.gymMinimumContestId ) )  { 
+				if( submissionList[ i ].problemIdentification == problemIdentification || ( submissionList[ i ].problemName == problemSetList[ j ].name && Math.abs( submissionList[ i ].contestId - problemSetList[ j ].contestId ) <= 1 ) )  { 
 					submissionList[ i ].userSolved = problemSetList[ j ].solvedCount ;
 					submissionList[ i ].userSolvedHtml = '' + submissionList[ i ].userSolved ;
 					break ;

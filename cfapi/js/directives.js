@@ -70,7 +70,7 @@ function CodeforcesRootDirective( cfcObj , cftsObj ) {
 				for( i = 0 ; i < len ; i++ ) {
 					scope.navigationFlags.push( false ) ;
 				}
-				scope.currentNavIndex = 1 ;
+				scope.currentNavIndex = cfcObj.defaultNavigationIndex ;
 				scope.navElementClicked( scope.currentNavIndex ) ;
 			} ;
 		
@@ -83,22 +83,35 @@ function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
 	return {
         restrict : 'E' ,
         replace : true ,
-		transclude : true ,
+		transclude : false ,
         template : '\
-        	<table class="table table-striped table-bordered customTable">\
-	            <thead>\
-	              <th data-ng-repeat="column in columnList" data-ng-style="{\'width\':((column.width!=null)?\'{{column.width}}\':\'\')}">\
-	                  <span><a href="javascript:void(0);" data-ng-click="sortColumn($index)">{{column.name}} <span class="glyphicon glyphicon-sort"></span></a></span>\
-	              </th>\
-	            </thead>\
-	            <tbody>\
-	              <tr data-ng-repeat="row in rowcellList track by $index" data-ng-init="rowIndex = $index">\
-	                <td data-ng-repeat="column in columnList track by $index" data-ng-init="columnIndex = $index">\
-	                    <span class="table-cell-generic" data-ng-bind-html="forceTrustHtml( getTableCellHtml( rowIndex , columnIndex ) )"></span>\
-	                </td>\
-	              </tr>\
-	            </tbody>\
-	        </table>' ,
+			<div>\
+				<nav class="text-center" data-ng-show="rowcellListEndIndex>0">\
+			      <ul class="pagination pagination-custom pagination-centered">\
+				  	<li data-ng-class="(currentPageNumber==1)?\'disabled\':\'\'" data-ng-click="paginationChangePage(1)"><a href="javascript:void(0);" aria-label="Previous"><span aria-hidden="true">Start</span></a></li>\
+			        <li data-ng-class="(currentPageNumber==1)?\'disabled\':\'\'" data-ng-click="paginationChangePage(currentPageNumber-maxButtons)"><a href="javascript:void(0);" aria-label="Previous"><span aria-hidden="true">&lt;&lt;</span></a></li>\
+					<li data-ng-class="(currentPageNumber==1)?\'disabled\':\'\'" data-ng-click="paginationChangePage(currentPageNumber-1)"><a href="javascript:void(0);" aria-label="Previous"><span aria-hidden="true">&lt;</span></a></li>\
+			        <li data-ng-repeat="item in buttonList track by $index" data-ng-click="paginationChangePage(item.name)" data-ng-class="(currentPageNumber==item.name)?\'active\':\'\'"><a href="javascript:void(0);" data-ng-bind="item.name"></a></li>\
+					<li data-ng-class="(currentPageNumber==numberOfPages)?\'disabled\':\'\'" data-ng-click="paginationChangePage(currentPageNumber+1)"><a href="javascript:void(0);" aria-label="Next"><span aria-hidden="true">&gt;</span></a></li>\
+			        <li data-ng-class="(currentPageNumber==numberOfPages)?\'disabled\':\'\'" data-ng-click="paginationChangePage(currentPageNumber+maxButtons)"><a href="javascript:void(0);" aria-label="Next"><span aria-hidden="true">&gt;&gt;</span></a></li>\
+					<li data-ng-class="(currentPageNumber==numberOfPages)?\'disabled\':\'\'" data-ng-click="paginationChangePage(numberOfPages)"><a href="javascript:void(0);" aria-label="Previous"><span aria-hidden="true">End</span></a></li>\
+			      </ul>\
+			    </nav>\
+	        	<table class="table table-striped table-bordered customTable">\
+		            <thead>\
+		              <th data-ng-repeat="column in columnList" data-ng-style="{\'width\':((column.width!=null)?\'{{column.width}}\':\'\')}">\
+		                  <span><a href="javascript:void(0);" data-ng-click="sortColumn($index)">{{column.name}} <span class="glyphicon glyphicon-sort"></span></a></span>\
+		              </th>\
+		            </thead>\
+		            <tbody>\
+		              <tr data-ng-repeat="row in rowcellList | dataLimiting:rowcellListStartIndex:rowcellListEndIndex track by $index" data-ng-init="rowIndex = $index;">\
+						<td data-ng-repeat="item in columnList">\
+							<span class="table-cell-generic" data-ng-bind-html="forceTrustHtml( row[ columnList[ $index ].sortIndex + \'Html\' ] )"></span>\
+						</td>\
+		              </tr>\
+		            </tbody>\
+		        </table>\
+			</div>' ,
         scope : {
 	    	'columnList' : '=' ,
 			'rowcellList' : '='
@@ -111,13 +124,70 @@ function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
 				return $sce.trustAsHtml( htmlString ) ;
 			} ;
 			
-			scope.getTableCellHtml = function( rowIndex , columnIndex ) {
-				var property ;
-				property = scope.columnList[ columnIndex ].sortIndex ;
-				if( scope.rowcellList[ rowIndex ] == null ) {
-					return '' ;
+			scope.loadDataForPageNumber = function() {
+				var start , end ;
+				start = ( scope.currentPageNumber - 1 ) * scope.maxRowsPerPage + 1 ;
+				end = start + scope.maxRowsPerPage - 1 ;
+				end = Math.min( end , scope.totalDataListLength ) ;
+				scope.rowcellListStartIndex = start - 1 ;
+				scope.rowcellListEndIndex = end ;
+			} ;
+			
+			scope.paginationChangePage = function( pageNumber ) {
+				var i , sz , start , end , left , right ;
+				if( pageNumber < 1 ) {
+					pageNumber = 1 ;
 				}
-				return scope.rowcellList[ rowIndex ][ property + 'Html' ] ;
+				if( pageNumber > scope.numberOfPages ) {
+					pageNumber = scope.numberOfPages ;
+				}
+				sz = scope.buttonList.length ;
+				if( pageNumber >= scope.buttonList[ 0 ].name && pageNumber <= scope.buttonList[ sz - 1 ].name ) {
+				}
+				else {
+					left = Math.floor( ( scope.maxButtons - 1 ) / 2 ) ;
+					right = scope.maxButtons - 1 - left ;
+					start = pageNumber - left ;
+					end = pageNumber + right ;
+					if( start < 1 ) {
+						start = 1 ;
+						end = Math.min( scope.maxButtons , scope.numberOfPages ) ;
+					}
+					if( end > scope.numberOfPages ) {
+						start = Math.max( 1 , scope.numberOfPages - scope.maxButtons + 1 ) ;
+						end = scope.numberOfPages ;
+					}
+					scope.buttonList = [] ;
+					for( i = start ; i <= end ; i++ ) {
+						scope.buttonList.push( { name : i } ) ;
+					}
+				}
+				scope.currentPageNumber = pageNumber ;
+				scope.loadDataForPageNumber() ;
+			} ;
+			
+			scope.tableDataReadyBroadcast = function() {
+				var i ;
+				scope.totalDataListLength = scope.rowcellList.length ;
+				scope.numberOfPages = Math.ceil( scope.totalDataListLength / scope.maxRowsPerPage ) ;
+				scope.numberOfButtons = Math.min( scope.maxButtons , scope.numberOfPages ) ;
+				scope.buttonList = [] ;
+				for( i = 0 ; i < scope.numberOfButtons ; i++ ) {
+					scope.buttonList.push( { name : ( i + 1 ) } ) ;
+				}
+				scope.loadDataForPageNumber() ;
+			} ;
+			
+			scope.init = function() {
+				scope.$on( 'table-data-ready' , scope.tableDataReadyBroadcast ) ;
+				scope.maxRowsPerPage = cfcObj.maxRowsPerPageInPagination ;
+				scope.maxButtons = cfcObj.maxButtonsInPagination ;
+				scope.numberOfButtons = 0 ;
+				scope.numberOfPages = 0 ;
+				scope.currentPageNumber = 1 ;
+				scope.totalDataListLength = 0 ;
+				scope.rowcellListStartIndex = 0 ;
+				scope.rowcellListEndIndex = scope.maxRowsPerPage ;
 			} ;
 			
 			scope.sortColumn = function( idx ) {
@@ -197,6 +267,8 @@ function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
 					}
 				} ) ;
 			} ;
+			
+			scope.init() ;
         }
     } ;
 }
@@ -210,17 +282,17 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 			<div class="panel panel-info">\
 				<div class="panel-heading"><h3 data-ng-bind-html="pageHeader"></h3></div>\
 				<div class="panel-body">\
-					<div class="well well-sm">\
+					<div class="well well-sm well-sm-override">\
 						<div>\
 							<span class="filter-span">Filters:</span>\
-							<select class="form-control generic-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
+							<select class="form-control generic-select-tag contest-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
 								<option data-ng-repeat="item in contestList.dataList" data-ng-bind="item.name" value="{{item.id}}" data-ng-init="contestListLoading($index)"></option>\
 							</select>\
 							<select class="form-control generic-select-tag" data-ng-change="countrySelected()" data-ng-model="selectedCountry">\
 								<option value="">Any Country</option>\
-								<option data-ng-repeat="item in countryList" data-ng-bind="item.countryName" value="{{item.countryName}}"></option>\
+								<option data-ng-repeat="item in countryList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-star" aria-hidden="true"></span> Clear Filters</button>\
+							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span> Clear Filters</button>\
 						</div>\
 					</div>\
 					<codeforces-table-directive column-list="customStandingTableStructure" rowcell-list="contestStandingsList.filteredDataList"></codeforces-table-directive>\
@@ -242,6 +314,7 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 				scope.userInfoList = scope.userInfoList.concat( response.dataList ) ;
 				if( scope.contestStandingsList != null && scope.contestStandingsList.summary.users.length > 0 && scope.userInfoList.length == scope.contestStandingsList.summary.users.length ) {
 					scope.contestStandingsList = cfApi.updateContestStandingsList( scope.contestStandingsList , scope.userInfoList ) ;
+					scope.countryList = scope.contestStandingsList.summary.countriesAlphabeticallySorted ;
 				}
 			} ;
 			
@@ -269,18 +342,20 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 				cfApi.getUserInfo( scope.userListInfoResponse , response.summary.users ) ;
 				scope.customStandingTableStructure = cftsObj.getCustomStandingTableStructure( response.summary , false ) ;
 				scope.contestStandingsList = response ;
+				cfApi.broadcastTableDataReadyFlag( scope ) ;
 				scope.showLoadingFlag = false ;
 			} ;
 			
 			scope.countrySelected = function() {
 				if( scope.selectedCountry != null && scope.selectedCountry != '' ) {
-					scope.contestStandingsList.filteredDataList = cfApi.getOfficialContestStandingsByCountry( scope.contestStandingsList.dataList , scope.userInfoList , scope.selectedCountry ) ;
+					scope.contestStandingsList.filteredDataList = cfApi.getOfficialContestStandingsByCountry( scope.contestStandingsList.dataList , scope.selectedCountry ) ;
 					scope.customStandingTableStructure = cftsObj.getCustomStandingTableStructure( scope.contestStandingsList.summary , true ) ;
 				}
 				else {
 					scope.contestStandingsList.filteredDataList = scope.contestStandingsList.dataList ; 
 					scope.customStandingTableStructure = cftsObj.getCustomStandingTableStructure( scope.contestStandingsList.summary , false ) ;
 				}
+				cfApi.broadcastTableDataReadyFlag( scope ) ;
 			} ;
 			
 			scope.showStandingFlagChanged = function( newValue , oldValue ) {
@@ -290,7 +365,7 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 			} ;
 
 			scope.$watch( 'showStandingFlag' , scope.showStandingFlagChanged , true ) ;
-			scope.countryList = cfsObj.getCountryList() ;
+			scope.countryList = [] ;
 			scope.userHandle = cfApi.getDefaultUserHandle() ;
 		}
 	} ;
@@ -305,7 +380,7 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 			<div class="panel panel-info">\
 				<div class="panel-heading"><h3 data-ng-bind-html="pageHeader"></h3></div>\
 				<div class="panel-body">\
-					<div class="well well-sm">\
+					<div class="well well-sm well-sm-override">\
 						<div>\
 							Total Accepted Submissions: <span class="badge badge-custom" data-ng-bind="submissionList.summary.totalAccepted+\' / \'+submissionList.summary.total"></span>\
 						</div>\
@@ -317,6 +392,9 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 						</div>\
 						<div>\
 							Verdict distribution breakdown: <span class="label" data-ng-repeat="item in submissionList.summary.verdicts" data-ng-bind="item.name + \' : \' + item.frequency" data-ng-class="item.cssClass"></span>\
+						</div>\
+						<div data-ng-show="showUnofficialOptionCheckbox==true">\
+							<input type="checkbox" aria-label="..." data-ng-model="showUnofficialUserSubmissionsFlag" data-ng-change="filterSubmissionDataList()">Show Unofficial\
 						</div>\
 						<div>\
 							<span class="filter-span">Filters:</span>\
@@ -336,11 +414,16 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 								<option value="">Any Country</option>\
 								<option data-ng-repeat="item in countryList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-star" aria-hidden="true"></span> Clear Filters</button>\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedPoint">\
+								<option value="">Any Points</option>\
+								<option data-ng-repeat="item in pointList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
+							</select>\
+							<select class="form-control generic-select-tag" data-ng-change="filterSubmissionDataList()" data-ng-model="selectedProblemIndex">\
+								<option value="">Any Problem Index</option>\
+								<option data-ng-repeat="item in problemIndexList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
+							</select>\
+							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span> Clear Filters</button>\
 						</div>\
-					</div>\
-					<div data-ng-show="showUnofficialOptionCheckbox==true">\
-						<input type="checkbox" aria-label="..." data-ng-model="showUnofficialUserSubmissionsFlag" data-ng-change="filterSubmissionDataList()">Show Unofficial\
 					</div>\
 					<codeforces-table-directive column-list="submissionTableStructure" rowcell-list="submissionList.filteredDataList" ></codeforces-table-directive>\
 				</div>\
@@ -355,14 +438,21 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
         link: function( scope , element , attrs ) {
 
 			scope.filterSubmissionDataList = function() {
-				scope.submissionList.filteredDataList = cfApi.getSubmissionListThroughFilter( scope.submissionList.dataList , scope.selectedVerdict , scope.showUnofficialUserSubmissionsFlag , scope.selectedTag , scope.selectedLanguage , scope.selectedCountry ) ;
+				scope.submissionList.filteredDataList = cfApi.getSubmissionListThroughFilter( scope.submissionList.dataList , scope.selectedVerdict , scope.showUnofficialUserSubmissionsFlag , scope.selectedTag , scope.selectedLanguage , scope.selectedCountry , scope.selectedProblemIndex , scope.selectedPoint ) ;
+				cfApi.broadcastTableDataReadyFlag( scope ) ;
 			} ;
 			
-			scope.clearFilters = function() {
+			scope.clearSelectors = function() {
 				scope.selectedTag = '' ;
 				scope.selectedLanguage = '' ;
 				scope.selectedVerdict = '' ;
 				scope.selectedCountry = '' ;
+				scope.selectedProblemIndex = '' ;
+				scope.selectedPoint = '' ;
+			} ;
+			
+			scope.clearFilters = function() {
+				scope.clearSelectors() ;
 				scope.showUnofficialUserSubmissionsFlag = true ;
 				scope.filterSubmissionDataList() ;
 			} ;
@@ -385,9 +475,12 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 			scope.submissionListLoadedFlagChanged = function( newValue , oldValue ) {
 				if( newValue == true ) {
 					scope.submissionList.filteredDataList = scope.submissionList.dataList ;
+					cfApi.broadcastTableDataReadyFlag( scope ) ;
 					scope.verdictList = scope.submissionList.summary.verdictsAlphabeticallySorted ;
 					scope.tagList = scope.submissionList.summary.tagsAlphabeticallySorted ;
 					scope.languageList = scope.submissionList.summary.languagesAlphabeticallySorted ;
+					scope.problemIndexList = scope.submissionList.summary.problemIndexesAlphabeticallySorted ;
+					scope.pointList = scope.submissionList.summary.pointsAlphabeticallySorted ;
 					scope.countryList = [] ;
 					scope.userInfoList = [] ;
 					cfApi.getUserInfo( scope.userListInfoResponse , scope.submissionList.summary.users ) ;
@@ -397,8 +490,7 @@ function CodeforcesSubmissionsDirective( cfApi , cftsObj ) {
 			
 			scope.init = function() {
 				scope.$watch( 'submissionListLoadedFlag' , scope.submissionListLoadedFlagChanged , true ) ;
-				scope.verdictList = [] ;
-				scope.selectedVerdict = '' ;
+				scope.clearSelectors() ;
 				scope.submissionTableStructure = cftsObj.getCustomSubmissionTableStructure( false ) ;
 				scope.showUnofficialUserSubmissionsFlag = true ;
 			} ;
@@ -476,9 +568,9 @@ function CodeforcesContestSubmissionsDirective( cfApi , cfcObj ) {
 		replace : true ,
 		template : '\
 			<div>\
-				<div class="well well-sm">\
-					Select Contest: \
-					<select class="form-control generic-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
+				<div class="well well-sm well-sm-override">\
+					<span class="filter-span">Select Contest:</span>\
+					<select class="form-control generic-select-tag contest-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
 						<option data-ng-repeat="item in contestList.dataList" data-ng-bind="item.name" value="{{item.id}}" data-ng-init="contestListLoading($index)"></option>\
 					</select>\
 				</div>\
@@ -537,7 +629,7 @@ function CodeforcesProblemSetDirective( cfApi , cftsObj ) {
 			<div class="panel panel-info">\
 				<div class="panel-heading"><h3 data-ng-bind-html="pageHeader"></h3></div>\
 				<div class="panel-body">\
-					<div class="well well-sm">\
+					<div class="well well-sm well-sm-override">\
 						<div>\
 							<span class="filter-span">Filters:</span>\
 							<select class="form-control generic-select-tag" data-ng-change="filterProblemSetDataList()" data-ng-model="selectedTag">\
@@ -552,7 +644,7 @@ function CodeforcesProblemSetDirective( cfApi , cftsObj ) {
 								<option value="">Any Problem Index</option>\
 								<option data-ng-repeat="item in problemIndexList" data-ng-bind="item.name+\' (\'+item.frequency+\')\'" value="{{item.name}}"></option>\
 							</select>\
-							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-star" aria-hidden="true"></span> Clear Filters</button>\
+							<button type="button" data-ng-click="clearFilters()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span> Clear Filters</button>\
 						</div>\
 					</div>\
 					<codeforces-table-directive column-list="customProblemSetTableStructure" rowcell-list="problemSetListObj.filteredDataList"></codeforces-table-directive>\
@@ -565,23 +657,26 @@ function CodeforcesProblemSetDirective( cfApi , cftsObj ) {
 	    } ,
         link: function( scope , element , attrs ) {
 			
+			scope.filterProblemSetDataList = function() {
+				scope.problemSetListObj.filteredDataList = cfApi.getProblemTableListThroughFilter( scope.problemSetListObj.dataList , scope.selectedTag , scope.selectedProblemIndex , scope.selectedPoint ) ;
+				cfApi.broadcastTableDataReadyFlag( scope ) ;
+			} ;
+			
 			scope.clearFilters = function() {
 				scope.selectedTag = '' ;
 				scope.selectedProblemIndex = '' ;
 				scope.selectedPoint = '' ;
-			} ;
-			
-			scope.filterProblemSetDataList = function() {
-				scope.problemSetListObj.filteredDataList = cfApi.getProblemTableListThroughFilter( scope.problemSetListObj.dataList , scope.selectedTag , scope.selectedProblemIndex , scope.selectedPoint ) ;
+				scope.filterProblemSetDataList() ;
 			} ;
 			
 			scope.problemSetListResponse = function( response ) {
 				scope.problemSetListObj = response ;
-				scope.showLoadingFlag = false ;
 				scope.clearFilters() ;
 				scope.tagList = response.summary.tagsAlphabeticallySorted ;
 				scope.problemIndexList = response.summary.problemIndexesAlphabeticallySorted ;
 				scope.pointList = response.summary.pointsAlphabeticallySorted ;
+				scope.showLoadingFlag = false ;
+				cfApi.broadcastTableDataReadyFlag( scope ) ;
 			} ;
 			
 			scope.showProblemSetFlagChanged = function( newValue , oldValue ) {

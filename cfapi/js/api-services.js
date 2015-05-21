@@ -60,6 +60,10 @@ function CodeforcesApiService( $http , $timeout , $sce , lssObj , cfsObj , cfcOb
 		self.makeJsonpRequest( paramList.url , paramList.dataParsingCallbackFunction , paramList.callbackFunction , paramList.isLocalStorageMaterial ) ;
 	} ;
 	
+	this.broadcastTableDataReadyFlag = function( scopeParam ) {
+		return $timeout( function() { scopeParam.$broadcast( 'table-data-ready' ) ; } , 0 ) ;
+	} ;
+	
 	this.getDefaultUserHandle = function() {
 		return self.cfcObj.defaultUserHandle ;
 	} ;
@@ -80,15 +84,12 @@ function CodeforcesApiService( $http , $timeout , $sce , lssObj , cfsObj , cfcOb
 		self.makeJsonpRequest( self.cfaubObj.buildContestStandingsUrl( contestId , from , count , handles , room , false ) , self.cfdlpObj.parseContestStandings , callbackFunction , false ) ;
 	} ;
 	
-	this.getOfficialContestStandingsByCountry = function( standingList , userInfoList , countryName ) {
-		return self.cfdlpObj.parseContestStandingsByCountry( standingList , userInfoList , countryName ) ;
+	this.getOfficialContestStandingsByCountry = function( standingList , countryName ) {
+		return self.cfdlpObj.parseContestStandingsByCountry( standingList , countryName ) ;
 	} ;
 	
 	this.updateContestStandingsList = function( standingListObj , userInfoList ) {
-		var res ;
-		res = standingListObj ;
-		res.dataList = self.cfdlpObj.parseContestStandingsWithUserInfo( standingListObj.dataList , userInfoList ) ;
-		return res ;
+		return self.cfdlpObj.parseContestStandingsWithUserInfo( standingListObj , userInfoList ) ;
 	} ;
 
 	this.getContestStandingsIncludingUnofficial = function( callbackFunction , contestId , room , from , count , handles ) {
@@ -115,8 +116,8 @@ function CodeforcesApiService( $http , $timeout , $sce , lssObj , cfsObj , cfcOb
 		self.makeJsonpRequest( self.cfaubObj.buildRecentSubmissionsForAllInPracticeUrl( count ) , self.cfdlpObj.parseSubmissions , callbackFunction , false ) ;
 	} ;
 	
-	this.getSubmissionListThroughFilter = function( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryList ) {
-		return self.cfdlpObj.parseSubmissionListThroughFilter( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryList ) ;
+	this.getSubmissionListThroughFilter = function( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryList , problemIndex , problemPoint ) {
+		return self.cfdlpObj.parseSubmissionListThroughFilter( submissionList , verdictName , showUnofficialSubmissions , tagName , languageName , countryList , problemIndex , problemPoint ) ;
 	} ;
 	
 	this.updateSubmissionsDataListWithUserInfo = function( submissionsListObj , userInfoList ) {

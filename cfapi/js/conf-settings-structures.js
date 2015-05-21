@@ -10,10 +10,14 @@ function CodeforcesConfiguration() {
 	this.defaultUserHandle = 'battousai' ;
 	
 	this.defaultContestStandingCount = 10000 ;
-	this.defaultContestStatusCount = 100000 ;
+	this.defaultContestStatusCount = 1000000 ;
 	this.defaultRecentSubmissions = 1000 ;
 	this.defaultUserSubmissions = 10000 ;
 	
+	this.maxRowsPerPageInPagination = 100 ;
+	this.maxButtonsInPagination = 5 ;
+	
+	this.defaultNavigationIndex = 1 ;
 	this.timeZoneOffsetInHours = 3 ;
 	this.localStorageTimeOutHours = 1 ;
 	this.constantMultiplierWhileSortingNumbers = 10000 ;
@@ -21,6 +25,10 @@ function CodeforcesConfiguration() {
 	this.perApiRequestUserHandleLimit = 500 ;
 	this.subsequentApiCallTimeoutInMilliseconds = 400 ;
 	this.gymMinimumContestId = 100000 ;
+	
+	this.acceptedSubmissionStatus = 'ok' ;
+	this.pretestSubmissionTestSetType = 'pretests' ;
+	this.standingResultType = 'preliminary' ;
 	
 	this.jsonpUrlParameter = null ;
 	this.angularHttpObj = null ;
@@ -40,7 +48,8 @@ function CodeforcesSettings() {
 		{ source : 'testing' , destination : 'Running' } , 
 		{ source : 'challenged' , destination : 'Hacked' } , 
 		{ source : '_' , destination : ' ' } , 
-		{ source : 'failed' , destination : 'Judgement Failed' } ] ;
+		{ source : 'failed' , destination : 'Judgement failed' } , 
+		{ source : 'pretests-passed' , destination : 'Pretests passed' } ] ;
 	this.ratingDesignations = [ 
 		'International Grandmaster' , 
 		'Grandmaster' , 
@@ -68,7 +77,9 @@ function CodeforcesSettings() {
 		'Compilation error' , 
 		'In queue' , 
 		'Skipped' , 
-		'Hacked' ] ;
+		'Hacked' ,
+		'Pretests passed' ,
+		'Rejected' ] ;
 	this.angularJsonpRequestQueryParameter = 'jsonp=JSON_CALLBACK' ;
 	
 	this.getCountryList = function() {
@@ -110,6 +121,7 @@ function CodeforcesTableStructures( $sce ) {
 	self.standingTableStructure = [ 
 		{ name : 'Rank' , sortIndex : 'rank' } , 
 		{ name : 'Relative Rank' , sortIndex : 'relativeRank' } , 
+		{ name : 'Room Number' , sortIndex : 'room' } , 
 		{ name : 'Handle(s)' , sortIndex : 'handle' , width : '230px' } , 
 		{ name : 'Points' , sortIndex : 'points' } , 
 		{ name : 'Penalty' , sortIndex : 'penalty' } , 

@@ -55,11 +55,19 @@ License: GNU General Public License version 2
 }
 
 .label-idleness-limit-exceeded {
-  background-color : #21A8BA;
+  background-color : #21A8BA ;
 }
 
 .label-judgement-failed {
-  background-color : #0F40BA;
+  background-color : #0F40BA ;
+}
+
+.label-pretests-passed {
+  background-color : #8cb85c ;
+}
+
+.label-rejected {
+  background-color : #8C0915 ;
 }
 
 .standings-cell-core {
@@ -80,6 +88,11 @@ License: GNU General Public License version 2
 .standings-cell-accepted {
   color : #0a0 ;
   font-weight : bold ;
+}
+
+.standings-cell-pretests-passed {
+  color : blue ;
+  font-weight : normal ;
 }
 
 .standings-cell-not-accepted {
@@ -111,7 +124,7 @@ License: GNU General Public License version 2
 .standings-cell-points {
   font-weight : bold ;
   margin-top : 0 ;
-  font-size : 0.9em ;
+  font-size : 0.95em ;
 }
 
 .flag-img {
@@ -213,6 +226,10 @@ table tr td {
   height : 20px ;
 }
 
+.nav-pills>li {
+  font-size : 13px ;
+}
+
 .overlay {
   background-color : rgba( 0 , 0 , 0 , 0.8 ) ;
   z-index : 999 ;
@@ -229,7 +246,7 @@ span.table-cell-generic {
 }
 
 .generic-select-tag {
-  width : 15% ;
+  width : 14% ;
   float : left ;
   padding : 0px 0px 0px 0px ;
   height : 23px ;
@@ -240,7 +257,19 @@ span.table-cell-generic {
   margin-right : 2.5px ;
 }
 
+.contest-select-tag {
+  width : 20% ;
+}
+
 .filter-span {
   float : left ;
   margin-right : 2.5px ;
+}
+
+.well-sm-override {
+  margin-bottom : 0px ;
+}
+
+.pagination-custom {
+  font-size : 12px ; 
 }
