@@ -15,8 +15,7 @@ function CodeforcesApiService( $http , $timeout , $sce , lssObj , cfsObj , cfcOb
 	self.shObj = shObj ;
 	self.cfaubObj = new CodeforcesApiUrlBuilder( self.cfsObj , self.cfcObj ) ;
 	self.cfdlpObj = new CodeforcesDataListParser( self.cfsObj , self.cfcObj , self.shObj ) ;
-	self.cfcObj.angularHttpObj = $http ;
-	self.cfcObj.jsonpUrlParameter = self.cfsObj.angularJsonpRequestQueryParameter ;
+	self.lastHttpRequestMadeOnTime = 0 ;
 
 	self.checkValidityOfResponse = function( data ) {
 		if( data.status != 'OK' ) {
@@ -32,24 +31,20 @@ function CodeforcesApiService( $http , $timeout , $sce , lssObj , cfsObj , cfcOb
 		if( callbackFunction == null ) {
 			throw new Error( 'No callbackFunction parameter is supplied for makeJsonpRequest method!' ) ;
 		}
-		if( isLocalStorageMaterial == true ) {
-			var responseData ; 
-			responseData = lssObj.Get( 'Codeforces:' + url ) ;
-			if( responseData != null ) {
-				responseData = dataParsingCallbackFunction( responseData ) ;
-				callbackFunction( responseData ) ;
-				return ;
+		if( $http != null ) {
+			if( ( new Date() ).getTime() - self.lastHttpRequestMadeOnTime > self.cfcObj.subsequentApiCallTimeoutInMilliseconds ) {
+				self.lastHttpRequestMadeOnTime = ( new Date() ).getTime() ;
+				$http.jsonp( url ).success( function( responseData ) {
+					responseData = self.checkValidityOfResponse( responseData ) ;
+					responseData = dataParsingCallbackFunction( responseData ) ;
+					callbackFunction( responseData ) ;
+				} ) ;
 			}
-		}
-		if( self.cfcObj.angularHttpObj != null ) {
-			self.cfcObj.angularHttpObj.jsonp( url ).success( function( responseData ) {
-				responseData = self.checkValidityOfResponse( responseData ) ;
-				responseData = dataParsingCallbackFunction( responseData ) ;
-				callbackFunction( responseData ) ;
-				if( isLocalStorageMaterial == true ) {
-					lssObj.Set( 'Codeforces:' + url , responseData ) ;
-				}
-			} );
+			else {
+				$timeout( function() {
+					self.makeJsonpRequest( url , dataParsingCallbackFunction , callbackFunction , isLocalStorageMaterial ) ;
+				} , self.cfcObj.subsequentApiCallTimeoutInMilliseconds ) ;
+			}
 		}
 		else {
 			throw new Error( 'No http object is supplied!' ) ;

@@ -208,13 +208,13 @@ function CodeforcesTableDirective( $sce , cfcObj , shsObj ) {
 						return false ;
 					}
 					if( column.sortIndex == 'handle' ) {
-						leftString = left[ column.sortIndex ][ 0 ].handle ;
+						leftString = left[ column.sortIndex ][ 0 ] ;
 					}
 					else {
 						leftString = left[ column.sortIndex ] ;
 					}
 					if( column.sortIndex == 'handle' ) {
-						rightString = right[ column.sortIndex ][ 0 ].handle ;
+						rightString = right[ column.sortIndex ][ 0 ] ;
 					}
 					else {
 						rightString = right[ column.sortIndex ] ;
@@ -604,7 +604,7 @@ function CodeforcesContestSubmissionsDirective( cfApi , cfcObj ) {
 				if( scope.selectedContest != null ) {
 					scope.showLoadingFlag = true ;
 					scope.submissionListLoadedFlag = false ;
-					cfApi.getContestStatus( scope.submissionListResponse , scope.selectedContest , 1 , 1000 ) ;
+					cfApi.getContestStatus( scope.submissionListResponse , scope.selectedContest , 1 , 3000 ) ;
 				}
 			} ;
 			
