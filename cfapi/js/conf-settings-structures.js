@@ -17,11 +17,11 @@ function CodeforcesConfiguration() {
 	this.maxRowsPerPageInPagination = 100 ;
 	this.maxButtonsInPagination = 5 ;
 	
-	this.defaultNavigationIndex = 3 ;
+	this.defaultNavigationIndex = 5 ;
 	this.timeZoneOffsetInHours = 3 ;
-	this.localStorageTimeOutHours = 1 ;
+	this.localStorageTimeOutHours = 24 * 365 ;
 	this.constantMultiplierWhileSortingNumbers = 10000 ;
-	this.defaultContestId = 546 ;
+	this.defaultContestId = 548 ;
 	this.perApiRequestUserHandleLimit = 600 ;
 	this.subsequentApiCallTimeoutInMilliseconds = 200 ;
 	this.gymMinimumContestId = 100000 ;
@@ -29,6 +29,8 @@ function CodeforcesConfiguration() {
 	this.acceptedSubmissionStatus = 'ok' ;
 	this.pretestSubmissionTestSetType = 'pretests' ;
 	this.standingResultType = 'preliminary' ;
+	this.outOfCompetitionParticipant = 'out_of_competition' ;
+	this.virtualParticipant = 'virtual' ;
 }
 
 function CodeforcesSettings() {
@@ -119,7 +121,7 @@ function CodeforcesTableStructures( $sce ) {
 		{ name : 'Rank' , sortIndex : 'rank' } , 
 		{ name : 'Relative Rank' , sortIndex : 'relativeRank' } , 
 		{ name : 'Room Number' , sortIndex : 'room' } , 
-		{ name : 'Handle(s)' , sortIndex : 'handle' , width : '230px' } , 
+		{ name : 'Handle(s)' , sortIndex : 'handle' , width : '300px' } , 
 		{ name : 'Points' , sortIndex : 'points' } , 
 		{ name : 'Penalty' , sortIndex : 'penalty' } , 
 		{ name : 'Hacks' , sortIndex : 'hacks' } ] ;
@@ -137,7 +139,7 @@ function CodeforcesTableStructures( $sce ) {
 		{ name : 'Contest Submissions' , title : 'Contest Submissions' } ,
 		{ name : 'Contest Standings' , title : 'Contest Standings' } ,
 		{ name : 'Problem List' , title : 'Problem List' } , 
-		{ name : '' , title : '<img alt="Settings" title="Settings" class="navigation-image" src="images/settings.png"/>' } ] ;
+		{ name : 'Settings' , title : '<img alt="Settings" title="Settings" class="navigation-image" src="images/settings.png"/>' } ] ;
 	
 	this.getCustomStandingTableStructure = function( summary , showRelativeRankFlag ) {
 		var res , i , sz , problemColumn ;

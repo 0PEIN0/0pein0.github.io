@@ -6,7 +6,7 @@ Github Repository Link: https://github.com/0PEIN0/cfapi
 License: GNU General Public License version 2
 */
 
-function CodeforcesRootDirective( cfcObj , cftsObj ) {
+function CodeforcesRootDirective( cfcObj , cftsObj , cfApi ) {
 	return {
         restrict : 'E' ,
         replace : true ,
@@ -30,6 +30,7 @@ function CodeforcesRootDirective( cfcObj , cftsObj ) {
 						<codeforces-contest-submissions-directive data-ng-show="navigationFlags[2] == true" show-loading-flag="showLoadingFlag" show-contest-submissions-flag="navigationFlags[2]" page-header="navElementNameList[2].title"></codeforces-contest-submissions-directive>\
 						<codeforces-contest-standing-directive data-ng-show="navigationFlags[3] == true" show-loading-flag="showLoadingFlag" show-standing-flag="navigationFlags[3]" page-header="navElementNameList[3].title"></codeforces-contest-standing-directive>\
 						<codeforces-problem-set-directive data-ng-show="navigationFlags[4] == true" show-loading-flag="showLoadingFlag" show-problem-set-flag="navigationFlags[4]" page-header="navElementNameList[4].title"></codeforces-problem-set-directive>\
+						<codeforces-settings-directive data-ng-show="navigationFlags[5] == true" show-loading-flag="showLoadingFlag" show-settings-flag="navigationFlags[5]" page-header="navElementNameList[5].name"></codeforces-settings-directive>\
 					</div>\
 				</div>\
 			</div>' ,
@@ -63,7 +64,7 @@ function CodeforcesRootDirective( cfcObj , cftsObj ) {
 		
 			scope.init = function() {
 				var i , len ;
-				scope.userHandle = cfcObj.defaultUserHandle ;
+				scope.userHandle = cfApi.getDefaultUserHandle() ;
 				scope.navigationFlags = [] ;
 				scope.navElementNameList = cftsObj.getNavigationStructure( scope.userHandle ) ;
 				len = scope.navElementNameList.length ;
@@ -284,6 +285,12 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 				<div class="panel-body">\
 					<div class="well well-sm well-sm-override">\
 						<div>\
+							<input type="checkbox" aria-label="..." data-ng-model="showOutOfComtetitionParticipantsFlag" data-ng-change="filterContestStandingList()">Show Out of Competition Participants\
+						</div>\
+						<div>\
+							<input type="checkbox" aria-label="..." data-ng-model="showVirtualParticipantsFlag" data-ng-change="filterContestStandingList()">Show Virtual Participants\
+						</div>\
+						<div>\
 							<span class="filter-span">Filters:</span>\
 							<select class="form-control generic-select-tag contest-select-tag" data-ng-change="contestSelected()" data-ng-model="selectedContest">\
 								<option data-ng-repeat="item in contestList.dataList" data-ng-bind="item.name" value="{{item.id}}" data-ng-init="contestListLoading($index)"></option>\
@@ -310,6 +317,10 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 				scope.countrySelected() ;
 			} ;
 			
+			scope.filterContestStandingList = function() {
+				
+			} ;
+			
 			scope.userListInfoResponse = function( response ) {
 				scope.userInfoList = scope.userInfoList.concat( response.dataList ) ;
 				if( scope.contestStandingsList != null && scope.contestStandingsList.summary.users.length > 0 && scope.userInfoList.length == scope.contestStandingsList.summary.users.length ) {
@@ -332,7 +343,7 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 			scope.contestSelected = function() {
 				if( scope.selectedContest != null ) {
 					scope.showLoadingFlag = true ;
-					cfApi.getOfficialContestStandings( scope.contestStandingsResponse , scope.selectedContest ) ;
+					cfApi.getContestStandingsIncludingUnofficial( scope.contestStandingsResponse , scope.selectedContest ) ;
 					scope.selectedCountry = '' ;
 				}
 			} ;
@@ -352,7 +363,7 @@ function CodeforcesContestStandingDirective( cfApi , cfcObj , cfsObj , cftsObj )
 					scope.customStandingTableStructure = cftsObj.getCustomStandingTableStructure( scope.contestStandingsList.summary , true ) ;
 				}
 				else {
-					scope.contestStandingsList.filteredDataList = scope.contestStandingsList.dataList ; 
+					scope.contestStandingsList.filteredDataList = scope.contestStandingsList.dataList ;
 					scope.customStandingTableStructure = cftsObj.getCustomStandingTableStructure( scope.contestStandingsList.summary , false ) ;
 				}
 				cfApi.broadcastTableDataReadyFlag( scope ) ;
@@ -687,6 +698,59 @@ function CodeforcesProblemSetDirective( cfApi , cftsObj ) {
 
 			scope.$watch( 'showProblemSetFlag' , scope.showProblemSetFlagChanged , true ) ;
 			scope.customProblemSetTableStructure = cftsObj.getCustomProblemSetTableStructure() ;
+		}
+	} ;
+}
+
+
+function CodeforcesSettingsDirective( lssObj , cfcObj , cfApi ) {
+	return {
+		restrict : 'E' ,
+		transclude : true ,
+		replace : true ,
+		template : '\
+			<div class="panel panel-info">\
+				<div class="panel-heading"><h3 data-ng-bind-html="pageHeader"></h3></div>\
+				<div class="panel-body" data-ng-form="settingsForm">\
+					<div class="well well-sm well-sm-override">\
+						<div class="input-group has-feedback" data-ng-class="{true:\'has-error\',false:\'has-success\'}[settingsForm.handle.$invalid==true]">\
+							<span class="input-group-addon" id="basic-addon1">Set Global User Handle: </span>\
+							<input data-ng-required="true" name="handle" class="form-control" placeholder="Default User Handle" type="text" data-ng-model="userHandle"/>\
+							<span data-ng-if="settingsForm.handle.$invalid==false" class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>\
+  							<span data-ng-if="settingsForm.handle.$invalid==false" id="inputSuccess2Status" class="sr-only">(success)</span>\
+							<span data-ng-if="settingsForm.handle.$invalid==true" class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>\
+  							<span data-ng-if="settingsForm.handle.$invalid==true" id="inputError2Status" class="sr-only">(error)</span>\
+						</div>\
+						<button type="button" data-ng-click="updateForm()" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Update</button>\
+					</div>\
+				</div>\
+			</div>' ,
+		scope : {
+	    	'showLoadingFlag' : '=' ,
+			'showSettingsFlag' : '=' ,
+			'pageHeader' : '='
+	    } ,
+		link : function( scope , element , attrs ) {
+			
+			scope.updateForm = function() {
+				if( scope.settingsForm.handle.$valid == true ) {
+					lssObj.Set( 'defaultUserHandle' , scope.userHandle ) ;
+					location.reload() ;
+				}
+			} ;
+			
+			scope.showSettingsFlagChanged = function( newValue , oldValue ) {
+				if( newValue == true ) {
+					scope.showLoadingFlag = false ;
+				}
+			} ;
+			
+			scope.init = function() {
+				scope.$watch( 'showSettingsFlag' , scope.showSettingsFlagChanged , true ) ;
+				scope.userHandle = cfApi.getDefaultUserHandle() ;
+			} ;
+			
+			scope.init() ;
 		}
 	} ;
 }

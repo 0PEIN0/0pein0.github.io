@@ -8,6 +8,7 @@ License: GNU General Public License version 2
 
 function LocalStorageService( cfcObj ) {
 	this.timeOutHours = 10 ;
+	
 	if( cfcObj.localStorageTimeOutHours != null ) {
 		this.timeOutHours = cfcObj.localStorageTimeOutHours ;
 	}
@@ -82,6 +83,18 @@ function LocalStorageService( cfcObj ) {
 				throw new Error( "Doesn't support 'localStorage' facility!" ) ;
 			}
 			localStorage.setItem( key , null ) ;
+		}
+		catch( ex ) {
+			throw ex ;
+		}
+	} ;
+	
+	this.Clear = function() {
+		try {
+			if( this.DoesLocalStorageExist() == false ) {
+				throw new Error( "Doesn't support 'localStorage' facility!" ) ;
+			}
+			localStorage.clear() ;
 		}
 		catch( ex ) {
 			throw ex ;
@@ -178,6 +191,20 @@ function StringHandler() {
 			}
 		}
 		return res ;
+	} ;
+	
+	this.replaceAllOccurrences = function( textString , substringSource , substringDestination ) {
+		if( textString == null ) {
+			return textString ;
+		}
+		while( textString.indexOf( substringSource ) != -1 ) {
+			textString = textString.replace( substringSource , substringDestination ) ;
+		}
+		return textString ;
+	} ;
+	
+	this.replaceAllUnderScoresWithSpaces = function( textString ) {
+		return this.replaceAllOccurrences( textString , '_' , ' ' ) ;
 	} ;
 }
 
